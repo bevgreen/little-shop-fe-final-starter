@@ -170,7 +170,9 @@ function displayItems(items) {
   itemsView.innerHTML = ''
   let firstHundredItems = items.slice(0, 99)
   firstHundredItems.forEach(item => {
-    let merchant = findMerchant(item.attributes.merchant_id).attributes.name
+    console.log("Looking for merchant with ID:", item.attributes.merchant_id);
+    console.log("Found merchant:", findMerchant(item.attributes.merchant_id));
+    let merchant = findMerchant(item.attributes.merchant_id).name
     itemsView.innerHTML += `
      <article class="item" id="item-${item.id}">
           <img src="" alt="">
@@ -184,11 +186,12 @@ function displayItems(items) {
 }
 
 function displayMerchants(merchants) {
+
     merchantsView.innerHTML = ''
     merchants.forEach(merchant => {
         merchantsView.innerHTML += 
         `<article class="merchant" id="merchant-${merchant.id}">
-          <h3 class="merchant-name">${merchant.attributes.name}</h3>
+          <h3 class="merchant-name">${merchant.name}</h3>
           <div class="merchant-options">
             <button class="view-merchant-coupons">View Coupons</button>
             <button class="view-merchant-items">View Items</button>
@@ -209,7 +212,7 @@ function displayMerchants(merchants) {
 function displayAddedMerchant(merchant) {
       merchantsView.insertAdjacentHTML('beforeend', 
       `<article class="merchant" id="merchant-${merchant.id}">
-          <h3 class="merchant-name">${merchant.attributes.name}</h3>
+          <h3 class="merchant-name">${merchant.attribute.name}</h3>
           <div class="merchant-options">
             <button class="view-merchant-coupons">View Coupons</button>
             <button class="view-merchant-items">View Items</button>
@@ -234,22 +237,40 @@ function displayMerchantItems(event) {
 
 function getMerchantCoupons(event) {
   let merchantId = event.target.closest("article").id.split('-')[1]
-  console.log("Merchant ID:", merchantId)
-
-  fetchData(`merchants/${merchantId}`)
-  .then(couponData => {
-    console.log("Coupon data from fetch:", couponData)
-    displayMerchantCoupons(couponData);
-  })
+  fetchData(`merchants/${merchantId}/coupons`)
+    .then(couponData => {
+      console.log("Coupon data from API:", couponData)
+      displayMerchantCoupons(couponData.data, merchantId)
+    })
+    .catch(error => {
+      console.error("Error fetching merchant coupons:", error)
+    })
 }
 
-function displayMerchantCoupons(coupons) {
+function displayMerchantCoupons(coupons, merchantId) {
   show([couponsView])
-  hide([merchantsView, itemsView])
+  hide([merchantsView, itemsView, addNewButton])
+  showingText.innerText = `All Coupons for Merchant #${merchantId}`
 
-  couponsView.innerHTML = `
-    <p>Coupon data will go here.</p>
-  `
+  couponsView.innerHTML = `<h2>Coupons for Merchant #${merchantId}</h2>`
+
+  if (!coupons || coupons.length === 0) {
+    couponsView.innerHTML += `<p>No coupons available for this merchant.</p>`
+    return
+  }
+  couponsView.innerHTML += `<section class="coupons-view">`
+
+  coupons.forEach(coupon => {
+    couponsView.innerHTML += `
+      <article class="coupon" id="coupon-${coupon.id}">
+        <h3>${coupon.attributes.name}</h3>
+        <p>Value: ${coupon.attributes.value}%</p>
+        <p>Code: <strong>${coupon.attributes.code}</strong></p>
+      </article>
+    `
+  })
+
+  couponsView.innerHTML += `</section>`
 }
 
 //Helper Functions
